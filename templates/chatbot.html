@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="chatbot.css">
+</head>
+<body>
+    <div class="container-fluid d-flex justify-content-center align-items-center vh-100">
+        <div class="col-md-6 col-lg-5 col-xl-4">
+            <div class="chatbot-container">
+                <!-- Chatbot Header -->
+                <div class="chatbot-header text-center py-3">
+                    <h4 class="mb-1">AI Chatbot</h4>
+                    <p class="mb-0">Ask me anything!</p>
+                </div>
+                
+                <!-- Chat Messages -->
+                <div class="chatbot-messages" id="chatMessages">
+                    <!-- Messages will appear here -->
+                </div>
+                
+                <!-- Chat Input Form -->
+                <form id="chatForm" class="chatbot-input px-3 pb-3 pt-2">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="msg" id="msg" placeholder="Type your message..." required>
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatForm = document.getElementById('chatForm');
+            const msgInput = document.getElementById('msg');
+            const chatMessages = document.getElementById('chatMessages');
+            
+            // Function to add a new message
+            function addMessage(text, isUser = false, timestamp = null) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+                
+                const time = timestamp || new Date();
+                const timeString = time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                if (!isUser) {
+                    messageDiv.innerHTML = `
+                        <div class="message-time">${timeString}</div>
+                        <div class="message-content">${text}</div>
+                    `;
+                } else {
+                    messageDiv.innerHTML = `
+                        <div class="message-content">${text}</div>
+                        <div class="message-time">${timeString}</div>
+                    `;
+                }
+                
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            // Handle form submission
+            chatForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const message = msgInput.value.trim();
+                
+                if (message) {
+                    // Add user message
+                    addMessage(message, true);
+                    msgInput.value = '';
+                    
+                    try {
+                        // Send to Flask backend
+                        const formData = new FormData(chatForm);
+                        const response = await fetch('/get', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (response.ok) {
+                            const botResponse = await response.text();
+                            addMessage(botResponse);
+                        } else {
+                            addMessage("Sorry, I couldn't process your request. Please try again.");
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        addMessage("I'm having trouble connecting. Please check your connection.");
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
